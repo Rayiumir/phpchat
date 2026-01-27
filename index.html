@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سیستم چت</title>
+    <link rel="stylesheet" href="/css/all.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1><i class="fas fa-comments"></i> سیستم چت  استریم آرموند گیمر</h1>
+            <p>پیام‌ها به صورت خودکار هنگام رسیدن به ۲۰ پیام پاکسازی می‌شوند</p>
+        </div>
+        
+        <div class="username-section" id="usernameSection">
+            <h2 style="margin-bottom: 15px; color: #4b6cb7;">لطفاً نام خود را وارد کنید</h2>
+            <form class="username-form" id="usernameForm">
+                <input type="text" class="username-input" id="usernameInput" placeholder="نام شما..." required maxlength="50">
+                <button type="submit" class="btn" id="joinBtn">
+                    <i class="fa-duotone fa-sign-in-alt"></i> ورود به چت
+                </button>
+            </form>
+        </div>
+        
+        <div class="chat-section" id="chatSection">
+            <div class="user-info">
+                <i class="fas fa-user"></i>
+                <span>شما با نام <strong id="currentUsername"></strong> در چت حضور دارید</span>
+            </div>
+            
+            <div class="messages-container" id="messagesContainer">
+                <div class="status" id="loadingStatus">در حال بارگذاری پیام‌ها...</div>
+            </div>
+            
+            <div class="input-section">
+                <input type="text" class="message-input" id="messageInput" placeholder="پیام خود را بنویسید..." disabled>
+                <button class="btn" id="sendBtn" disabled>
+                    <i class="fa-duotone fa-paper-plane"></i> ارسال
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="/js/chat.js"></script>
+</body>
+</html>
