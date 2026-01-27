@@ -1,6 +1,6 @@
 @font-face {
     font-family: Vazir;
-    src: url("/fonts/Vazirmatn-RD-FD-Regular.woff2") format("woff2");
+    src: url("../fonts/Vazirmatn-RD-FD-Regular.woff2") format("woff2");
     font-style: normal;
     font-weight: 300;
     font-display: swap;
@@ -8,7 +8,7 @@
 
 @font-face {
     font-family: Vazir;
-    src: url("/fonts/Vazirmatn-RD-FD-Bold.woff2") format("woff2");
+    src: url("../fonts/Vazirmatn-RD-FD-Bold.woff2") format("woff2");
     font-style: normal;
     font-weight: 700;
     font-display: swap;
@@ -21,11 +21,11 @@
 }
 
 body {
-    font-family: Vazir;
+    font-family: Vazir, sans-serif;
     background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
     color: #333;
     min-height: 100vh;
-    padding: 20px;
+    padding: 15px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -40,31 +40,34 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    height: 90vh;
+    height: 95vh;
 }
 
 .chat-header {
     background: linear-gradient(to right, #4b6cb7, #182848);
     color: white;
-    padding: 20px;
+    padding: 15px 20px;
     text-align: center;
+    flex-shrink: 0;
 }
 
 .chat-header h1 {
-    font-size: 24px;
+    font-size: 20px;
     margin-bottom: 5px;
 }
 
 .chat-header p {
-    opacity: 0.8;
-    font-size: 14px;
+    opacity: 0.9;
+    font-size: 13px;
+    margin-top: 5px;
 }
 
 .username-section {
-    padding: 20px;
+    padding: 20px 15px;
     background-color: #f8f9fa;
     border-bottom: 1px solid #eaeaea;
     text-align: center;
+    flex-shrink: 0;
 }
 
 .username-form {
@@ -72,6 +75,7 @@ body {
     gap: 10px;
     justify-content: center;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .username-input {
@@ -80,7 +84,9 @@ body {
     border-radius: 10px;
     font-size: 16px;
     width: 250px;
+    max-width: 100%;
     transition: all 0.3s;
+    font-family: inherit;
 }
 
 .username-input:focus {
@@ -100,6 +106,7 @@ body {
     font-weight: bold;
     transition: all 0.3s;
     font-family: inherit;
+    white-space: nowrap;
 }
 
 .btn:hover {
@@ -122,22 +129,26 @@ body {
     display: none;
     flex-direction: column;
     height: 100%;
+    flex: 1;
+    overflow: hidden;
 }
 
 .messages-container {
     flex: 1;
-    padding: 20px;
+    padding: 15px;
     overflow-y: auto;
     background-color: #f8f9fa;
+    min-height: 0;
 }
 
 .message {
-    margin-bottom: 15px;
-    padding: 12px 15px;
+    margin-bottom: 12px;
+    padding: 10px 15px;
     border-radius: 15px;
-    max-width: 80%;
+    max-width: 50%;
     word-wrap: break-word;
     animation: fadeIn 0.3s ease-in-out;
+    line-height: 1.5;
 }
 
 @keyframes fadeIn {
@@ -145,7 +156,6 @@ body {
         opacity: 0;
         transform: translateY(10px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -153,10 +163,12 @@ body {
 }
 
 .message.user {
-    background: linear-gradient(to right, #4b6cb7, #182848);
+    background: linear-gradient(to left, #4b6cb7, #182848);
     color: white;
     margin-left: auto;
+    margin-right: 0;
     border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 15px;
 }
 
 .message.other {
@@ -164,27 +176,31 @@ body {
     color: #333;
     border: 1px solid #eaeaea;
     margin-right: auto;
+    margin-left: 0;
     border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 15px;
 }
 
 .message-header {
     display: flex;
     justify-content: space-between;
     margin-bottom: 5px;
-    font-size: 12px;
+    font-size: 11px;
     opacity: 0.8;
 }
 
 .message-content {
     line-height: 1.5;
+    font-size: 15px;
 }
 
 .input-section {
-    padding: 20px;
+    padding: 15px;
     border-top: 1px solid #eaeaea;
     display: flex;
     gap: 10px;
     background-color: white;
+    flex-shrink: 0;
 }
 
 .message-input {
@@ -195,6 +211,7 @@ body {
     font-size: 16px;
     transition: all 0.3s;
     font-family: inherit;
+    min-width: 0;
 }
 
 .message-input:focus {
@@ -219,7 +236,7 @@ body {
     border-radius: 10px;
     padding: 10px 15px;
     margin-bottom: 15px;
-    font-size: 14px;
+    font-size: 13px;
     color: #0056b3;
     text-align: center;
     border-right: 4px solid #4b6cb7;
@@ -230,34 +247,113 @@ body {
     align-items: center;
     gap: 10px;
     justify-content: center;
-    padding: 10px 0;
+    padding: 10px 15px;
     background-color: #f8f9fa;
     border-bottom: 1px solid #eaeaea;
+    flex-shrink: 0;
 }
 
 .user-info i {
     color: #4b6cb7;
 }
 
+/* رسپانسیو برای موبایل */
 @media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
     .chat-container {
-        height: 95vh;
+        height: 100vh;
+        max-height: -webkit-fill-available;
         border-radius: 15px;
     }
-
-    .message {
-        max-width: 90%;
+    
+    .chat-header {
+        padding: 12px 15px;
     }
-
+    
+    .chat-header h1 {
+        font-size: 18px;
+    }
+    
+    .chat-header p {
+        font-size: 12px;
+    }
+    
+    .username-section {
+        padding: 15px 10px;
+    }
+    
     .username-form {
         flex-direction: column;
+        width: 100%;
     }
-
+    
     .username-input {
         width: 100%;
+        max-width: 100%;
+        padding: 10px 12px;
+    }
+    
+    .btn {
+        /*width: 100%;*/
+        padding: 10px 20px;
+    }
+    
+    .messages-container {
+        padding: 10px;
+    }
+    
+    .message {
+        max-width: 90%;
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    .input-section {
+        padding: 10px;
+        flex-wrap: nowrap;
+    }
+    
+    .message-input {
+        padding: 10px 12px;
+        font-size: 15px;
+        min-height: 44px;
+    }
+    
+    .send-btn {
+        padding: 10px 15px;
+        min-width: 60px;
     }
 }
 
+@media (max-width: 480px) {
+    .chat-container {
+        border-radius: 10px;
+    }
+    
+    .chat-header h1 {
+        font-size: 16px;
+    }
+    
+    .message {
+        max-width: 95%;
+    }
+    
+    .message-header {
+        font-size: 10px;
+    }
+    
+    .message-content {
+        font-size: 14px;
+    }
+    
+    .info-box {
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+}
 .emoji-btn {
     background: none;
     border: none;
@@ -276,7 +372,6 @@ body {
 .emoji-picker {
     position: absolute;
     bottom: 70px;
-    right: 20px;
     width: 320px;
     background: white;
     border-radius: 12px;
