@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         xhr.onload = function () {
             sendBtn.disabled = false;
-            sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> ارسال';
+            sendBtn.innerHTML = '<i class="fa-duotone fa-paper-plane"></i> ارسال';
             isSending = false;
 
             if (xhr.status === 200) {
