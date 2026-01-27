@@ -13,9 +13,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 // Setting Database
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'simple_chat');
-define('DB_USER', 'chat1');
-define('DB_PASS', '123456');
+define('DB_NAME', 'phpchat');
+define('DB_USER', 'root');
+define('DB_PASS', '');
 
 // Settings Chat
 define('MAX_MESSAGES', 20); // Maximum number of messages
