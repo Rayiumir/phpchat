@@ -19,11 +19,31 @@
             <h2 style="margin-bottom: 15px; color: #4b6cb7;">لطفاً نام خود را وارد کنید</h2>
             <form class="username-form" id="usernameForm">
                 <input type="text" class="username-input" id="usernameInput" placeholder="نام شما..." required maxlength="50">
+                <button class="emoji-btn" id="emojiTrigger" title="ایموجی">
+                    😊
+                </button>
                 <button type="submit" class="btn" id="joinBtn">
                     <i class="fa-duotone fa-sign-in-alt"></i> ورود به چت
                 </button>
-            </form>
+            </form>       
         </div>
+
+        <div class="emoji-picker" id="emojiPicker">
+                <div class="emoji-picker-header">
+                    <h3>ایموجی‌ها</h3>
+                    <button class="close-emoji-picker" id="closeEmojiPicker">
+                        ×
+                    </button>
+                </div>
+                
+                <div class="recent-emojis">
+                    <h4>ایموجی‌های اخیر</h4>
+                    <div class="recent-emoji-list" id="recentEmojis">
+                    </div>
+                </div>
+                
+                <div class="emoji-container" id="emojiContainer"></div>
+            </div>
         
         <div class="chat-section" id="chatSection">
             <div class="user-info">

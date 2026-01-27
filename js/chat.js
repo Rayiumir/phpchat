@@ -3,6 +3,12 @@ let lastMessageId = 0;
 let messageCheckInterval;
 let messagesLoaded = false;
 let isSending = false; // Flag for sending messages
+let recentEmojis = JSON.parse(localStorage.getItem('chat_recent_emojis') || '["😊", "👍", "❤️", "😂", "🎉"]');
+
+const emojis = [
+    "😊", "😂", "❤️", "👍", "🎉", "🔥", "🙏", "🎮", "🤔", "👏",
+    "😍", "😎", "🤣", "🥳", "😁", "💯", "✨", "🌟", "💪", "😉"
+];
 
 // Event when DOM is loaded 
 document.addEventListener('DOMContentLoaded', function () {
@@ -15,6 +21,105 @@ document.addEventListener('DOMContentLoaded', function () {
     const sendBtn = document.getElementById('sendBtn');
     const messagesContainer = document.getElementById('messagesContainer');
     const loadingStatus = document.getElementById('loadingStatus');
+
+    // Emoji picker
+    const emojiPicker = document.getElementById('emojiPicker');
+    const emojiTrigger = document.getElementById('emojiTrigger');
+    const closeEmojiPicker = document.getElementById('closeEmojiPicker');
+    const emojiContainer = document.getElementById('emojiContainer');
+    const recentEmojisContainer = document.getElementById('recentEmojis');
+
+    // Function Display Emoji Picker
+    function showEmojiPicker() {
+        emojiPicker.style.display = 'block';
+        loadRecentEmojis();
+        loadAllEmojis();
+    }
+
+    // Function Hide Emoji Picker
+    function hideEmojiPicker() {
+        emojiPicker.style.display = 'none';
+    }
+
+    // Function Load Recent Emojis
+    function loadRecentEmojis() {
+        recentEmojisContainer.innerHTML = '';
+        
+        recentEmojis.forEach(emoji => {
+            const button = document.createElement('button');
+            button.className = 'emoji-btn-small';
+            button.textContent = emoji;
+            button.addEventListener('click', () => insertEmoji(emoji));
+            recentEmojisContainer.appendChild(button);
+        });
+    }
+
+    // Function to load All emojis
+    function loadAllEmojis() {
+        emojiContainer.innerHTML = '';
+        
+        emojis.forEach(emoji => {
+            const button = document.createElement('button');
+            button.className = 'emoji-btn-small';
+            button.textContent = emoji;
+            button.addEventListener('click', () => {
+                insertEmoji(emoji);
+                addToRecentEmojis(emoji);
+            });
+            emojiContainer.appendChild(button);
+        });
+    }
+
+    // Function to insert emoji
+    function insertEmoji(emoji) {
+        const input = messageInput;
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        
+        input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+        input.focus();
+        hideEmojiPicker();
+    }
+
+    // Function to add recent emojis
+    function addToRecentEmojis(emoji) {
+        recentEmojis = recentEmojis.filter(e => e !== emoji);
+        
+        recentEmojis.unshift(emoji);
+        
+        if (recentEmojis.length > 10) {
+            recentEmojis = recentEmojis.slice(0, 10);
+        }
+        
+        localStorage.setItem('chat_recent_emojis', JSON.stringify(recentEmojis));
+    }
+
+    // Event listener for emoji trigger
+    emojiTrigger.addEventListener('click', function(e) {
+        e.preventDefault();
+        emojiPicker.style.display = emojiPicker.style.display === 'block' ? 'none' : 'block';
+        if (emojiPicker.style.display === 'block') {
+            loadRecentEmojis();
+            loadAllEmojis();
+        }
+    });
+
+    closeEmojiPicker.addEventListener('click', hideEmojiPicker);
+
+    // Close emoji picker when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!emojiPicker.contains(event.target) && !emojiTrigger.contains(event.target)) {
+            hideEmojiPicker();
+        }
+    });
+
+    // Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            hideEmojiPicker();
+        }
+    });
 
     usernameForm.addEventListener('submit', function (e) {
         e.preventDefault();
