@@ -13,12 +13,14 @@
         <div class="chat-header">
             <h1><i class="fa-duotone fa-comments"></i> سیستم چت </h1>
             <p>پیام‌ها به صورت خودکار هنگام رسیدن به ۲۰ پیام پاکسازی می‌شوند</p>
+            <button class="theme-toggle" id="themeToggle" title="تغییر تم">
+                <i class="fa-duotone fa-moon" id="themeIcon"></i>
+            </button>
         </div>
         
         <div class="username-section" id="usernameSection">
-            <h2 style="margin-bottom: 15px; color: #4b6cb7;">لطفاً نام خود را وارد کنید</h2>
             <form class="username-form" id="usernameForm">
-                <input type="text" class="username-input" id="usernameInput" placeholder="نام شما..." required maxlength="50">
+                <input type="text" class="username-input" id="usernameInput" placeholder="لطفاً نام خود را وارد کنید ..." required maxlength="50">
                 
                 <button type="submit" class="btn" id="joinBtn">
                     <i class="fa-duotone fa-sign-in-alt"></i> ورود به چت
@@ -29,7 +31,7 @@
         
         <div class="chat-section" id="chatSection">
             <div class="user-info">
-                <i class="fas fa-user"></i>
+                <i class="fa-duotone fa-user"></i>
                 <span>شما با نام <strong id="currentUsername"></strong> در چت حضور دارید</span>
             </div>
             
