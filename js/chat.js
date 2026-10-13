@@ -4,6 +4,10 @@ let messageCheckInterval;
 let messagesLoaded = false;
 let isSending = false; // Flag for sending messages
 let recentEmojis = JSON.parse(localStorage.getItem('chat_recent_emojis') || '["😊", "👍", "❤️", "😂", "🎉"]');
+let replyingTo = null; // Message being replied to {id, username, message}
+let knownUsers = new Set(); // Usernames seen in chat (for @mention autocomplete)
+let mentionState = { visible: false, matches: [], activeIndex: 0, atIndex: 0 };
+let unreadMentions = 0;
 
 const emojis = [
     "😊", "😂", "❤️", "👍", "🎉", "🔥", "🙏", "🎮", "🤔", "👏",
@@ -56,6 +60,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const sendBtn = document.getElementById('sendBtn');
     const messagesContainer = document.getElementById('messagesContainer');
     const loadingStatus = document.getElementById('loadingStatus');
+    const replyPreview = document.getElementById('replyPreview');
+    const replyPreviewUser = document.getElementById('replyPreviewUser');
+    const replyPreviewText = document.getElementById('replyPreviewText');
+    const cancelReplyBtn = document.getElementById('cancelReplyBtn');
+    const mentionAutocomplete = document.getElementById('mentionAutocomplete');
+    const notificationContainer = document.getElementById('notificationContainer');
 
     // Emoji picker
     const emojiPicker = document.getElementById('emojiPicker');
@@ -147,6 +157,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!emojiPicker.contains(event.target) && !emojiTrigger.contains(event.target)) {
             hideEmojiPicker();
         }
+        if (!mentionAutocomplete.contains(event.target) && event.target !== messageInput) {
+            hideMentionAutocomplete();
+        }
     });
 
     // Escape key
@@ -180,19 +193,52 @@ document.addEventListener('DOMContentLoaded', function () {
         sendBtn.disabled = false;
         messageInput.focus();
 
-        loadMessages();
+        // Ask for browser notification permission (user gesture required)
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission().catch(function () {});
+        }
 
         startMessageChecker();
     });
 
     // Send message
     sendBtn.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', function (e) {
+    messageInput.addEventListener('keydown', function (e) {
+        if (mentionState.visible) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                mentionState.activeIndex = (mentionState.activeIndex + 1) % mentionState.matches.length;
+                renderMentionAutocomplete();
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                mentionState.activeIndex = (mentionState.activeIndex - 1 + mentionState.matches.length) % mentionState.matches.length;
+                renderMentionAutocomplete();
+                return;
+            }
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                selectMention(mentionState.matches[mentionState.activeIndex]);
+                return;
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                hideMentionAutocomplete();
+                return;
+            }
+        }
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
     });
+
+    // Mention autocomplete on typing
+    messageInput.addEventListener('input', handleMentionInput);
+
+    // Cancel reply
+    cancelReplyBtn.addEventListener('click', cancelReply);
 
 // Function to send message
     function sendMessage() {
@@ -215,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function () {
         sendBtn.disabled = true;
         sendBtn.innerHTML = '<i class="fa-duotone fa-spinner fa-spin"></i> ' + t('message.sending');
 
-        addTemporaryMessage(message);
+        addTemporaryMessage(message, replyingTo);
 
         // Send message to server
         const xhr = new XMLHttpRequest();
@@ -233,6 +279,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (response.success) {
                         messageInput.value = '';
+
+                        cancelReply();
 
                         removeTemporaryMessage();
 
@@ -269,12 +317,13 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         const params = 'action=send&username=' + encodeURIComponent(currentUsername) +
-            '&message=' + encodeURIComponent(message);
+            '&message=' + encodeURIComponent(message) +
+            (replyingTo ? '&reply_to=' + encodeURIComponent(replyingTo.id) : '');
         xhr.send(params);
     }
 
     // Function to add Temporary Message
-    function addTemporaryMessage(message) {
+    function addTemporaryMessage(message, replyTo = null) {
         const tempId = 'temp-' + Date.now();
         const messageDiv = document.createElement('div');
         messageDiv.id = tempId;
@@ -291,7 +340,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     <span class="sender">${currentUsername} ${t('message.sending_prefix')}</span>
                     <span class="time">${time}</span>
                 </div>
-                <div class="message-content">${escapeHtml(message)}</div>
+                ${replyTo ? renderReplyQuote(replyTo) : ''}
+                <div class="message-content">${highlightMentions(escapeHtml(message))}</div>
             `;
 
         messagesContainer.appendChild(messageDiv);
@@ -329,27 +379,38 @@ document.addEventListener('DOMContentLoaded', function () {
     function loadMessages(forceReload = false) {
         if (window.isLoadingMessages && !forceReload) return;
 
+        // Abort any in-flight incremental request before starting a force reload
+        if (forceReload && window.currentLoadXhr) {
+            window.currentLoadXhr.abort();
+            window.currentLoadXhr = null;
+        }
+
         window.isLoadingMessages = true;
 
         const xhr = new XMLHttpRequest();
+        window.currentLoadXhr = xhr;
         xhr.open('GET', `chat.php?action=get&last_id=${forceReload ? 0 : lastMessageId}&t=${Date.now()}`, true);
 
         xhr.onload = function () {
             window.isLoadingMessages = false;
+            window.currentLoadXhr = null;
 
             if (xhr.status === 200) {
                 try {
                     const response = JSON.parse(xhr.responseText);
 
                     if (response.success) {
+                        const firstLoad = !messagesLoaded;
                         if (!messagesLoaded) {
                             loadingStatus.style.display = 'none';
                             messagesLoaded = true;
                         }
 
                         if (response.messages.length > 0) {
-                            displayMessages(response.messages, forceReload);
-                            lastMessageId = response.last_id;
+                            // Only notify on incremental polls, not on initial load or forced reloads
+                            const shouldNotify = !firstLoad && !forceReload;
+                            displayMessages(response.messages, forceReload, shouldNotify, lastMessageId);
+                            lastMessageId = parseInt(response.last_id);
                         }
 
                         messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -364,13 +425,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
         xhr.onerror = function () {
             window.isLoadingMessages = false;
+            window.currentLoadXhr = null;
+        };
+
+        xhr.onabort = function () {
+            window.isLoadingMessages = false;
+            window.currentLoadXhr = null;
         };
 
         xhr.send();
     }
 
     // Function to display messages
-    function displayMessages(messages, clearExisting = false) {
+    // notifySinceId: only trigger mention notifications for messages newer than this id
+    function displayMessages(messages, clearExisting = false, notify = true, notifySinceId = 0) {
         if (clearExisting) {
             const existingMessages = messagesContainer.querySelectorAll('.message:not(.temporary)');
             existingMessages.forEach(msg => msg.remove());
@@ -384,8 +452,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         messages.forEach(msg => {
             if (!displayedMessageIds.has(msg.id)) {
+                knownUsers.add(msg.username);
+
+                const mentioned = notify && parseInt(msg.id) > notifySinceId && isMentioned(msg);
+
                 const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${msg.username === currentUsername ? 'user' : 'other'}`;
+                messageDiv.className = `message ${msg.username === currentUsername ? 'user' : 'other'}${mentioned ? ' mentioned' : ''}`;
                 messageDiv.dataset.messageId = msg.id;
 
                 const time = new Date(msg.created_at).toLocaleTimeString('fa-IR', {
@@ -393,15 +465,35 @@ document.addEventListener('DOMContentLoaded', function () {
                     minute: '2-digit'
                 });
 
+                const replyQuote = (msg.reply_to && msg.reply_to_username)
+                    ? renderReplyQuote({ username: msg.reply_to_username, message: msg.reply_to_message })
+                    : '';
+
                 messageDiv.innerHTML = `
                         <div class="message-header">
-                            <span class="sender">${escapeHtml(msg.username)}</span>
+                            <div class="message-header-start">
+                                <span class="sender">${escapeHtml(msg.username)}</span>
+                                <button class="reply-btn" title="${escapeHtml(t('reply.reply'))}">
+                                    <i class="fa-duotone fa-reply"></i>
+                                </button>
+                            </div>
                             <span class="time">${time}</span>
                         </div>
-                        <div class="message-content">${escapeHtml(msg.message)}</div>
+                        ${replyQuote}
+                        <div class="message-content">${highlightMentions(escapeHtml(msg.message))}</div>
                     `;
 
+                const replyBtn = messageDiv.querySelector('.reply-btn');
+                replyBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    startReply({ id: msg.id, username: msg.username, message: msg.message });
+                });
+
                 messagesContainer.appendChild(messageDiv);
+
+                if (mentioned) {
+                    notifyMention(msg);
+                }
             }
         });
 
@@ -415,15 +507,274 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Function to start replying to a message
+    function startReply(reply) {
+        replyingTo = { id: reply.id, username: reply.username, message: reply.message };
+        replyPreviewUser.textContent = reply.username;
+        replyPreviewText.textContent = truncateText(reply.message, 80);
+        replyPreview.style.display = 'flex';
+        messageInput.focus();
+    }
+
+    // Function to cancel reply
+    function cancelReply() {
+        replyingTo = null;
+        replyPreview.style.display = 'none';
+        replyPreviewUser.textContent = '';
+        replyPreviewText.textContent = '';
+    }
+
+    // Function to render a quoted reply block
+    function renderReplyQuote(reply) {
+        if (!reply || !reply.username) return '';
+        const snippet = escapeHtml(truncateText(reply.message, 60));
+        return '<div class="reply-quote">' +
+            '<i class="fa-duotone fa-reply reply-quote-icon"></i>' +
+            '<span class="reply-quote-user">' + escapeHtml(reply.username) + '</span>' +
+            '<span class="reply-quote-text">' + snippet + '</span>' +
+            '</div>';
+    }
+
+    // Function to truncate text
+    function truncateText(text, max) {
+        if (!text) return '';
+        text = String(text);
+        return text.length > max ? text.substring(0, max - 1) + '…' : text;
+    }
+
+    // Function to decode HTML entities (messages are stored HTML-escaped)
+    function decodeHtmlEntities(text) {
+        const div = document.createElement('div');
+        div.innerHTML = text;
+        return div.textContent || '';
+    }
+
+    // Function to extract @mentions from message text
+    function extractMentions(text) {
+        const decoded = decodeHtmlEntities(text || '');
+        const mentions = [];
+        const regex = /@(\S+)/g;
+        let match;
+        while ((match = regex.exec(decoded)) !== null) {
+            const name = match[1].replace(/^[^\p{L}\p{N}_]+|[^\p{L}\p{N}_]+$/gu, '');
+            if (name.length >= 2 && name.length <= 50) {
+                mentions.push(name);
+            }
+        }
+        return mentions;
+    }
+
+    // Function to check if a message mentions or replies to the current user
+    function isMentioned(msg) {
+        if (!currentUsername) return false;
+        if (msg.username === currentUsername) return false;
+        // Direct @mention in the message body
+        if (extractMentions(msg.message).some(
+            name => name.toLowerCase() === currentUsername.toLowerCase()
+        )) return true;
+        // Reply directed at the current user
+        if (msg.reply_to_username &&
+            msg.reply_to_username.toLowerCase() === currentUsername.toLowerCase()) return true;
+        return false;
+    }
+
+    // Function to highlight @mentions in escaped message text
+    function highlightMentions(escapedText) {
+        return escapedText.replace(/@(\S{1,50})/g, function (full, name) {
+            const leadMatch = name.match(/^[^\p{L}\p{N}_]+/u);
+            const lead = leadMatch ? leadMatch[0] : '';
+            const rest = name.substring(lead.length);
+            const trailMatch = rest.match(/[^\p{L}\p{N}_]+$/u);
+            const trail = trailMatch ? trailMatch[0] : '';
+            const core = rest.substring(0, rest.length - trail.length);
+            if (core.length < 2) return full;
+            return '@' + lead + '<span class="mention">' + core + '</span>' + trail;
+        });
+    }
+
+    // Function to show a notification when the user is mentioned or replied to
+    function notifyMention(msg) {
+        const isReply = msg.reply_to_username &&
+            msg.reply_to_username.toLowerCase() === currentUsername.toLowerCase();
+        const notifLabel = isReply
+            ? t('notification.replied_to_you')
+            : t('notification.mentioned_you');
+
+        unreadMentions++;
+        document.title = '(' + unreadMentions + ') ' + t('notification.mention_title');
+
+        const notif = document.createElement('div');
+        notif.className = 'notification';
+        notif.innerHTML = `
+                <div class="notification-icon"><i class="fa-duotone fa-${isReply ? 'reply' : 'at'}"></i></div>
+                <div class="notification-body">
+                    <strong>${escapeHtml(msg.username)}</strong> ${escapeHtml(notifLabel)}
+                    <div class="notification-text">${escapeHtml(truncateText(decodeHtmlEntities(msg.message), 60))}</div>
+                </div>
+                <button class="notification-close" title="${escapeHtml(t('notification.close'))}">&times;</button>
+            `;
+
+        notif.querySelector('.notification-close').addEventListener('click', function (e) {
+            e.stopPropagation();
+            notif.remove();
+        });
+
+        notif.addEventListener('click', function () {
+            const target = messagesContainer.querySelector('.message[data-message-id="' + msg.id + '"]');
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.classList.add('mention-flash');
+                setTimeout(function () { target.classList.remove('mention-flash'); }, 2000);
+            }
+            notif.remove();
+        });
+
+        notificationContainer.appendChild(notif);
+        setTimeout(function () {
+            if (notif.parentElement) notif.remove();
+        }, 7000);
+
+        // Browser notification
+        if ('Notification' in window) {
+            const browserTitle = isReply
+                ? msg.username + ' ' + t('notification.replied_to_you')
+                : t('notification.mention_title');
+            if (Notification.permission === 'granted') {
+                try {
+                    const browserNotif = new Notification(browserTitle, {
+                        body: msg.username + ': ' + truncateText(decodeHtmlEntities(msg.message), 100),
+                        tag: 'mention-' + msg.id,
+                        requireInteraction: true
+                    });
+                    browserNotif.onclick = function () { window.focus(); };
+                } catch (e) {
+                    console.error('Notification error:', e);
+                }
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(function (permission) {
+                    if (permission === 'granted') {
+                        try {
+                            const browserNotif = new Notification(browserTitle, {
+                                body: msg.username + ': ' + truncateText(decodeHtmlEntities(msg.message), 100),
+                                tag: 'mention-' + msg.id,
+                                requireInteraction: true
+                            });
+                            browserNotif.onclick = function () { window.focus(); };
+                        } catch (e) {
+                            console.error('Notification error:', e);
+                        }
+                    }
+                }).catch(function () {});
+            }
+        }
+    }
+
+    // Function to handle @mention autocomplete while typing
+    function handleMentionInput() {
+        const val = messageInput.value;
+        const caret = messageInput.selectionStart;
+        const textBefore = val.slice(0, caret);
+        const atIndex = textBefore.lastIndexOf('@');
+
+        if (atIndex === -1) {
+            hideMentionAutocomplete();
+            return;
+        }
+
+        const prefix = textBefore.slice(atIndex + 1);
+        if (/\s/.test(prefix)) {
+            hideMentionAutocomplete();
+            return;
+        }
+
+        const matches = Array.from(knownUsers)
+            .filter(u => u.toLowerCase().startsWith(prefix.toLowerCase()))
+            .filter(u => u.toLowerCase() !== currentUsername.toLowerCase())
+            .slice(0, 6);
+
+        if (matches.length === 0) {
+            hideMentionAutocomplete();
+            return;
+        }
+
+        mentionState = { visible: true, matches: matches, activeIndex: 0, atIndex: atIndex };
+        renderMentionAutocomplete();
+    }
+
+    // Function to render the mention autocomplete list
+    function renderMentionAutocomplete() {
+        mentionAutocomplete.innerHTML = '';
+        mentionState.matches.forEach(function (user, index) {
+            const item = document.createElement('div');
+            item.className = 'mention-item' + (index === mentionState.activeIndex ? ' active' : '');
+            item.textContent = user;
+            item.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                selectMention(user);
+            });
+            mentionAutocomplete.appendChild(item);
+        });
+        mentionAutocomplete.style.display = 'block';
+    }
+
+    // Function to insert the selected mention into the input
+    function selectMention(user) {
+        const val = messageInput.value;
+        const caret = messageInput.selectionStart;
+        const before = val.slice(0, mentionState.atIndex);
+        const after = val.slice(caret);
+        messageInput.value = before + '@' + user + ' ' + after;
+        messageInput.selectionStart = messageInput.selectionEnd = (before + '@' + user + ' ').length;
+        hideMentionAutocomplete();
+        messageInput.focus();
+    }
+
+    // Function to hide the mention autocomplete
+    function hideMentionAutocomplete() {
+        mentionState.visible = false;
+        mentionAutocomplete.style.display = 'none';
+    }
+
+    // Clicking a highlighted mention inserts it into the input
+    messagesContainer.addEventListener('click', function (e) {
+        const mentionEl = e.target.closest('.mention');
+        if (mentionEl) {
+            const val = messageInput.value;
+            const start = messageInput.selectionStart;
+            const end = messageInput.selectionEnd;
+            const text = '@' + mentionEl.textContent + ' ';
+            messageInput.value = val.substring(0, start) + text + val.substring(end);
+            messageInput.selectionStart = messageInput.selectionEnd = start + text.length;
+            messageInput.focus();
+        }
+    });
+
+    // Restore the document title when the window regains focus
+    window.addEventListener('focus', function () {
+        unreadMentions = 0;
+        document.title = t('chat.title');
+    });
+
     // Function to check for new messages
     function startMessageChecker() {
+        // Initial load — no notifications (catches up on existing history)
         loadMessages();
 
         messageCheckInterval = setInterval(() => {
+            // Only poll if not currently sending; lastMessageId is set after
+            // the initial load so only truly new messages will notify.
             if (!isSending) {
                 loadMessages();
             }
         }, 2000);
+
+        // Background tabs have their intervals throttled by the browser,
+        // so catch up immediately when the tab becomes visible again
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden && messagesLoaded && !isSending) {
+                loadMessages();
+            }
+        });
     }
 
     // Function to escape HTML

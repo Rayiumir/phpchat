@@ -31,6 +31,8 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 try {
     // Connect to the database
     require_once 'config.php';
+
+    ensureSchema($pdo);
     
     switch ($action) {
         case 'send':
@@ -46,6 +48,18 @@ try {
     jsonResponse(false, 'خطا در سرور: ' . $e->getMessage());
 }
 
+// Ensure the messages table has all required columns (migration for existing installs)
+function ensureSchema($pdo) {
+    $stmt = $pdo->query("SHOW COLUMNS FROM messages LIKE 'reply_to'");
+    if ($stmt->rowCount() == 0) {
+        $pdo->exec("ALTER TABLE messages ADD COLUMN reply_to INT DEFAULT NULL AFTER message");
+    }
+    $stmt = $pdo->query("SHOW COLUMNS FROM messages LIKE 'reply_to_username'");
+    if ($stmt->rowCount() == 0) {
+        $pdo->exec("ALTER TABLE messages ADD COLUMN reply_to_username VARCHAR(50) DEFAULT NULL AFTER reply_to");
+    }
+}
+
 // Function to send message
 function sendMessage($pdo) {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -54,6 +68,7 @@ function sendMessage($pdo) {
     
     $username = $_POST['username'] ?? '';
     $message = $_POST['message'] ?? '';
+    $replyTo = isset($_POST['reply_to']) ? intval($_POST['reply_to']) : 0;
     
     if (empty($username) || strlen($username) > 50) {
         jsonResponse(false, 'نام کاربری معتبر نیست');
@@ -66,14 +81,27 @@ function sendMessage($pdo) {
     $username = htmlspecialchars(trim($username), ENT_QUOTES, 'UTF-8');
     $message = htmlspecialchars(trim($message), ENT_QUOTES, 'UTF-8');
     
-    $lastMessage = checkLastMessage($pdo, $username, $message);
+    // Validate reply_to references an existing message and capture the author's username
+    $replyToId = null;
+    $replyToUsername = null;
+    if ($replyTo > 0) {
+        $stmt = $pdo->prepare("SELECT id, username FROM messages WHERE id = ?");
+        $stmt->execute([$replyTo]);
+        $replyMsg = $stmt->fetch();
+        if ($replyMsg) {
+            $replyToId = $replyTo;
+            $replyToUsername = $replyMsg['username'];
+        }
+    }
+    
+    $lastMessage = checkLastMessage($pdo, $username, $message, $replyToId);
     if ($lastMessage) {
         jsonResponse(true, 'پیام با موفقیت ارسال شد', ['message_id' => $lastMessage['id']]);
         return;
     }
     
-    $stmt = $pdo->prepare("INSERT INTO messages (username, message) VALUES (?, ?)");
-    $result = $stmt->execute([$username, $message]);
+    $stmt = $pdo->prepare("INSERT INTO messages (username, message, reply_to, reply_to_username) VALUES (?, ?, ?, ?)");
+    $result = $stmt->execute([$username, $message, $replyToId, $replyToUsername]);
     
     if (!$result) {
         jsonResponse(false, 'خطا در ذخیره پیام');
@@ -87,16 +115,16 @@ function sendMessage($pdo) {
 }
 
 // Function to check last message
-function checkLastMessage($pdo, $username, $message) {
+function checkLastMessage($pdo, $username, $message, $replyToId) {
     $stmt = $pdo->prepare("
         SELECT id, username, message 
         FROM messages 
-        WHERE username = ? AND message = ? 
+        WHERE username = ? AND message = ? AND reply_to <=> ?
         AND created_at >= DATE_SUB(NOW(), INTERVAL 5 SECOND)
         ORDER BY id DESC 
         LIMIT 1
     ");
-    $stmt->execute([$username, $message]);
+    $stmt->execute([$username, $message, $replyToId]);
     return $stmt->fetch();
 }
 
@@ -105,10 +133,13 @@ function getMessages($pdo) {
     $lastId = isset($_GET['last_id']) ? intval($_GET['last_id']) : 0;
     
     $stmt = $pdo->prepare("
-        SELECT id, username, message, created_at 
-        FROM messages 
-        WHERE id > ? 
-        ORDER BY created_at ASC 
+        SELECT m.id, m.username, m.message, m.created_at, m.reply_to,
+               COALESCE(m.reply_to_username, r.username) AS reply_to_username,
+               r.message AS reply_to_message
+        FROM messages m
+        LEFT JOIN messages r ON m.reply_to = r.id
+        WHERE m.id > ?
+        ORDER BY m.created_at ASC
         LIMIT 100
     ");
     $stmt->execute([$lastId]);

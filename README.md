@@ -13,6 +13,8 @@ A simple chat application written in PHP.
 # Features
 
 - Real-time messaging using AJAX
+- Reply to messages with quoted previews
+- Mention users with @username (autocomplete, highlighting, and notifications)
 - User authentication with username only
 - Automatic message cleanup (removes oldest messages when exceeding 20)
 - Emoji support with built-in emoji picker

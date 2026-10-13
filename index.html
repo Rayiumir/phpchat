@@ -44,7 +44,16 @@
             <div class="messages-container" id="messagesContainer">
                 <div class="status" id="loadingStatus" data-i18n="messages.loading">در حال بارگذاری پیام‌ها...</div>
             </div>
-            
+
+            <div class="reply-preview" id="replyPreview" style="display: none;">
+                <div class="reply-preview-content">
+                    <span class="reply-preview-label" data-i18n="reply.replying">در حال پاسخ به</span>
+                    <strong class="reply-preview-user" id="replyPreviewUser"></strong>
+                    <span class="reply-preview-text" id="replyPreviewText"></span>
+                </div>
+                <button class="reply-preview-close" id="cancelReplyBtn" data-i18n-title="reply.cancel" title="Cancel reply">&times;</button>
+            </div>
+
             <div class="input-section">
                 <input type="text" class="message-input" id="messageInput" data-i18n-placeholder="message.placeholder" disabled>
                 <button class="emoji-btn" id="emojiTrigger" data-i18n-title="emoji.title">
@@ -54,6 +63,7 @@
                     <i class="fa-duotone fa-paper-plane"></i> <span data-i18n="message.send">ارسال</span>
                 </button>
             </div>
+            <div class="mention-autocomplete" id="mentionAutocomplete" style="display: none;"></div>
             <div class="emoji-picker" id="emojiPicker">
                 <div class="emoji-picker-header">
                     <h3 data-i18n="emoji.title">ایموجی‌ها</h3>
@@ -72,6 +82,7 @@
             </div>
         </div>
     </div>
+    <div class="notification-container" id="notificationContainer"></div>
     <script src="js/translations.js"></script>
     <script src="js/chat.js"></script>
 </body>
