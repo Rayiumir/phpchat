@@ -92,6 +92,58 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+[dir="ltr"] body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+[dir="rtl"] .header-controls {
+    left: auto;
+    right: 20px;
+}
+
+[dir="ltr"] .header-controls {
+    left: 20px;
+    right: auto;
+}
+
+[dir="ltr"] .theme-toggle,
+[dir="ltr"] .lang-toggle {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+[dir="rtl"] .emoji-btn {
+    margin-right: 8px;
+    margin-left: 0;
+}
+
+[dir="ltr"] .emoji-btn {
+    margin-right: 0;
+    margin-left: 8px;
+}
+
+[dir="rtl"] .emoji-picker {
+    right: 20px;
+    left: auto;
+}
+
+[dir="ltr"] .emoji-picker {
+    right: auto;
+    left: 20px;
+}
+
+@media (max-width: 768px) {
+    [dir="rtl"] .emoji-picker {
+        right: 10px;
+        left: 10px;
+    }
+    
+    [dir="ltr"] .emoji-picker {
+        right: 10px;
+        left: 10px;
+    }
+}
+
 .chat-container {
     width: 100%;
     max-width: 800px;
@@ -121,6 +173,15 @@ body {
     position: relative;
 }
 
+.header-controls {
+    position: absolute;
+    top: 16px;
+    left: 20px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
 .chat-header h1 {
     font-size: 18px;
     font-weight: 600;
@@ -133,10 +194,7 @@ body {
     margin-top: 0;
 }
 
-.theme-toggle {
-    position: absolute;
-    top: 16px;
-    left: 20px;
+.theme-toggle, .lang-toggle {
     background: rgba(255, 255, 255, 0.1);
     border: none;
     border-radius: 10px;
@@ -148,6 +206,35 @@ body {
     justify-content: center;
     transition: all 0.2s ease;
     color: var(--header-text);
+}
+
+.lang-toggle {
+    width: auto;
+    padding: 0 12px;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+}
+
+.lang-toggle:hover, .theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.lang-toggle #languageIcon {
+    font-size: 16px;
+}
+
+@media (max-width: 768px) {
+    .lang-toggle span {
+        display: none;
+    }
+    
+    .lang-toggle {
+        width: 40px;
+        padding: 0;
+    }
 }
 
 .theme-toggle:hover {

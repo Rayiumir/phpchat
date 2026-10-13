@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     themeToggle.addEventListener('click', toggleTheme);
     initTheme();
+    initLanguage();
 
     const usernameForm = document.getElementById('usernameForm');
     const usernameInput = document.getElementById('usernameInput');
@@ -160,12 +161,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const username = usernameInput.value.trim();
 
         if (username.length < 2) {
-            alert('نام باید حداقل ۲ کاراکتر باشد');
+            alert(t('username.min_length'));
             return;
         }
 
         if (username.length > 50) {
-            alert('نام نمی‌تواند بیش از ۵۰ کاراکتر باشد');
+            alert(t('username.max_length'));
             return;
         }
 
@@ -193,26 +194,26 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Function to send message
+// Function to send message
     function sendMessage() {
-        if (isSending) return; 
+        if (isSending) return;
 
         const message = messageInput.value.trim();
 
         if (message.length === 0) {
-            showAlert('لطفاً پیام خود را وارد کنید', 'warning');
+            showAlert(t('message.empty'), 'warning');
             return;
         }
 
         if (message.length > 500) {
-            showAlert('پیام نمی‌تواند بیش از ۵۰۰ کاراکتر باشد', 'warning');
+            showAlert(t('message.max_length'), 'warning');
             return;
         }
 
         isSending = true;
 
         sendBtn.disabled = true;
-        sendBtn.innerHTML = '<i class="fa-duotone fa-spinner fa-spin"></i> در حال ارسال...';
+        sendBtn.innerHTML = '<i class="fa-duotone fa-spinner fa-spin"></i> ' + t('message.sending');
 
         addTemporaryMessage(message);
 
@@ -223,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         xhr.onload = function () {
             sendBtn.disabled = false;
-            sendBtn.innerHTML = '<i class="fa-duotone fa-paper-plane"></i> ارسال';
+            sendBtn.innerHTML = '<i class="fa-duotone fa-paper-plane"></i> ' + t('message.send');
             isSending = false;
 
             if (xhr.status === 200) {
@@ -235,35 +236,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         removeTemporaryMessage();
 
-                        loadMessages(true); // true یعنی force reload
+                        loadMessages(true); // true means force reload
                     } else {
-                        showAlert('خطا در ارسال پیام: ' + response.message, 'error');
+                        showAlert(t('alert.error.send', {message: response.message}), 'error');
                         removeTemporaryMessage();
                     }
                 } catch (e) {
-                    showAlert('خطا در پردازش پاسخ سرور', 'error');
+                    showAlert(t('alert.error.parse'), 'error');
                     console.error('Parse error:', e, 'Response:', xhr.responseText);
                     removeTemporaryMessage();
                 }
             } else {
-                showAlert('خطا در ارتباط با سرور (کد: ' + xhr.status + ')', 'error');
+                showAlert(t('alert.error.server', {code: xhr.status}), 'error');
                 removeTemporaryMessage();
             }
         };
 
         xhr.onerror = function () {
             sendBtn.disabled = false;
-            sendBtn.innerHTML = '<i class="fa-duotone fa-paper-plane"></i> ارسال';
+            sendBtn.innerHTML = '<i class="fa-duotone fa-paper-plane"></i> ' + t('message.send');
             isSending = false;
-            showAlert('خطا در ارتباط با سرور. لطفاً اتصال اینترنت را بررسی کنید.', 'error');
+            showAlert(t('alert.error.connection'), 'error');
             removeTemporaryMessage();
         };
 
         xhr.ontimeout = function () {
             sendBtn.disabled = false;
-            sendBtn.innerHTML = '<i class="fa-duotone fa-paper-plane"></i> ارسال';
+            sendBtn.innerHTML = '<i class="fa-duotone fa-paper-plane"></i> ' + t('message.send');
             isSending = false;
-            showAlert('Timeout! سرور پاسخ نمی‌دهد.', 'error');
+            showAlert(t('alert.error.timeout'), 'error');
             removeTemporaryMessage();
         };
 
@@ -287,7 +288,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         messageDiv.innerHTML = `
                 <div class="message-header">
-                    <span class="sender">${currentUsername} (در حال ارسال...)</span>
+                    <span class="sender">${currentUsername} ${t('message.sending_prefix')}</span>
                     <span class="time">${time}</span>
                 </div>
                 <div class="message-content">${escapeHtml(message)}</div>

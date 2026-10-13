@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سیستم چت</title>
+    <title data-i18n="chat.title">سیستم چت</title>
     <link rel="stylesheet" href="css/all.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -11,19 +11,25 @@
 
     <div class="chat-container">
         <div class="chat-header">
-            <h1><i class="fa-duotone fa-comments"></i> سیستم چت </h1>
-            <p>پیام‌ها به صورت خودکار هنگام رسیدن به ۲۰ پیام پاکسازی می‌شوند</p>
-            <button class="theme-toggle" id="themeToggle" title="تغییر تم">
-                <i class="fa-duotone fa-moon" id="themeIcon"></i>
-            </button>
+            <h1><i class="fa-duotone fa-comments"></i> <span data-i18n="chat.title">سیستم چت</span></h1>
+            <p data-i18n="chat.subtitle">پیام‌ها به صورت خودکار هنگام رسیدن به ۲۰ پیام پاکسازی می‌شوند</p>
+            <div class="header-controls">
+                <button class="theme-toggle" id="themeToggle" data-i18n-title="theme.toggle">
+                    <i class="fa-duotone fa-moon" id="themeIcon"></i>
+                </button>
+                <button class="lang-toggle" id="languageToggle" title="Switch to English">
+                    <i class="fa-duotone fa-globe" id="languageIcon"></i>
+                    <span id="languageText">فارسی</span>
+                </button>
+            </div>
         </div>
         
         <div class="username-section" id="usernameSection">
             <form class="username-form" id="usernameForm">
-                <input type="text" class="username-input" id="usernameInput" placeholder="لطفاً نام خود را وارد کنید ..." required maxlength="50">
+                <input type="text" class="username-input" id="usernameInput" data-i18n-placeholder="username.placeholder" required maxlength="50">
                 
                 <button type="submit" class="btn" id="joinBtn">
-                    <i class="fa-duotone fa-sign-in-alt"></i> ورود به چت
+                    <i class="fa-duotone fa-sign-in-alt"></i> <span data-i18n="username.join">ورود به چت</span>
                 </button>
             </form>       
         </div>
@@ -32,32 +38,32 @@
         <div class="chat-section" id="chatSection">
             <div class="user-info">
                 <i class="fa-duotone fa-user"></i>
-                <span>شما با نام <strong id="currentUsername"></strong> در چت حضور دارید</span>
+                <span data-i18n="chat.welcome">شما با نام <strong id="currentUsername"></strong> در چت حضور دارید</span>
             </div>
             
             <div class="messages-container" id="messagesContainer">
-                <div class="status" id="loadingStatus">در حال بارگذاری پیام‌ها...</div>
+                <div class="status" id="loadingStatus" data-i18n="messages.loading">در حال بارگذاری پیام‌ها...</div>
             </div>
             
             <div class="input-section">
-                <input type="text" class="message-input" id="messageInput" placeholder="پیام خود را بنویسید..." disabled>
-                <button class="emoji-btn" id="emojiTrigger" title="ایموجی">
+                <input type="text" class="message-input" id="messageInput" data-i18n-placeholder="message.placeholder" disabled>
+                <button class="emoji-btn" id="emojiTrigger" data-i18n-title="emoji.title">
                     😊
                 </button>
                 <button class="btn" id="sendBtn" disabled>
-                    <i class="fa-duotone fa-paper-plane"></i> ارسال
+                    <i class="fa-duotone fa-paper-plane"></i> <span data-i18n="message.send">ارسال</span>
                 </button>
             </div>
             <div class="emoji-picker" id="emojiPicker">
                 <div class="emoji-picker-header">
-                    <h3>ایموجی‌ها</h3>
-                    <button class="close-emoji-picker" id="closeEmojiPicker">
+                    <h3 data-i18n="emoji.title">ایموجی‌ها</h3>
+                    <button class="close-emoji-picker" id="closeEmojiPicker" data-i18n-title="emoji.close">
                         ×
                     </button>
                 </div>
                 
                 <div class="recent-emojis">
-                    <h4>ایموجی‌های اخیر</h4>
+                    <h4 data-i18n="emoji.recent">ایموجی‌های اخیر</h4>
                     <div class="recent-emoji-list" id="recentEmojis">
                     </div>
                 </div>
@@ -66,6 +72,7 @@
             </div>
         </div>
     </div>
+    <script src="js/translations.js"></script>
     <script src="js/chat.js"></script>
 </body>
 </html>
