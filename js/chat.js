@@ -3,6 +3,7 @@ let lastMessageId = 0;
 let messageCheckInterval;
 let messagesLoaded = false;
 let isSending = false; // Flag for sending messages
+let userScrolledUp = false; // True when user has manually scrolled away from the bottom
 let recentEmojis = JSON.parse(localStorage.getItem('chat_recent_emojis') || '["😊", "👍", "❤️", "😂", "🎉"]');
 let replyingTo = null; // Message being replied to {id, username, message}
 let knownUsers = new Set(); // Usernames seen in chat (for @mention autocomplete)
@@ -240,6 +241,18 @@ document.addEventListener('DOMContentLoaded', function () {
     // Cancel reply
     cancelReplyBtn.addEventListener('click', cancelReply);
 
+    // Track whether the user has scrolled up so we don't hijack their position.
+    messagesContainer.addEventListener('scroll', function () {
+        // Always update based on actual position, regardless of programmatic scrolls
+        // This prevents stale state when programmatic scrolls interfere
+        const distanceFromBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
+        userScrolledUp = distanceFromBottom > 60;
+    }, { passive: true });
+
+    function scrollToBottom() {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
 // Function to send message
     function sendMessage() {
         if (isSending) return;
@@ -359,7 +372,10 @@ document.addEventListener('DOMContentLoaded', function () {
             document.head.appendChild(style);
         }
 
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        // Scroll to bottom only if user was already there
+        if (!userScrolledUp) {
+            scrollToBottom();
+        }
 
         window.currentTempMessageId = tempId;
     }
@@ -411,9 +427,15 @@ document.addEventListener('DOMContentLoaded', function () {
                             const shouldNotify = !firstLoad && !forceReload;
                             displayMessages(response.messages, forceReload, shouldNotify, lastMessageId);
                             lastMessageId = parseInt(response.last_id);
+                        } else if (forceReload) {
+                            // Even if no messages returned, we still need to update display
+                            displayMessages([], true, false, lastMessageId);
                         }
 
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        // Scroll to bottom only if user was already there
+                        if (!userScrolledUp) {
+                            scrollToBottom();
+                        }
                     } else {
                         loadingStatus.textContent = 'خطا در بارگذاری پیام‌ها';
                     }
@@ -439,7 +461,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // Function to display messages
     // notifySinceId: only trigger mention notifications for messages newer than this id
     function displayMessages(messages, clearExisting = false, notify = true, notifySinceId = 0) {
+        let scrollTopBefore = 0;
+        let heightBefore = 0;
+        const wasScrolledUp = userScrolledUp;
+
         if (clearExisting) {
+            scrollTopBefore = messagesContainer.scrollTop;
+            heightBefore = messagesContainer.scrollHeight;
             const existingMessages = messagesContainer.querySelectorAll('.message:not(.temporary)');
             existingMessages.forEach(msg => msg.remove());
         }
@@ -497,13 +525,25 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // If the number of messages increases, delete some
+        // Prune oldest messages when over the cap.
+        // Preserve scroll position: removing nodes above the viewport shifts scrollTop,
+        // so we compensate by measuring the height delta before/after removal.
         const allMessages = messagesContainer.querySelectorAll('.message:not(.temporary)');
         if (allMessages.length > 100) {
             const toRemove = allMessages.length - 100;
+            const scrollTopBefore = messagesContainer.scrollTop;
+            const heightBefore = messagesContainer.scrollHeight;
             for (let i = 0; i < toRemove; i++) {
                 allMessages[i].remove();
             }
+            // Restore the viewer's position by offsetting the height that was removed
+            const removedHeight = heightBefore - messagesContainer.scrollHeight;
+            messagesContainer.scrollTop = scrollTopBefore - removedHeight;
+        } else if (clearExisting && wasScrolledUp) {
+            // If we cleared and re-added messages but user was scrolled up, restore position
+            const heightAfter = messagesContainer.scrollHeight;
+            const heightDelta = heightAfter - heightBefore;
+            messagesContainer.scrollTop = scrollTopBefore + heightDelta;
         }
     }
 
