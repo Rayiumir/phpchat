@@ -123,24 +123,21 @@ body {
 }
 
 [dir="rtl"] .emoji-picker {
-    right: 20px;
+    right: 16px;
     left: auto;
 }
 
 [dir="ltr"] .emoji-picker {
     right: auto;
-    left: 20px;
+    left: 16px;
 }
 
 @media (max-width: 768px) {
-    [dir="rtl"] .emoji-picker {
-        right: 10px;
-        left: 10px;
-    }
-    
+    [dir="rtl"] .emoji-picker,
     [dir="ltr"] .emoji-picker {
-        right: 10px;
-        left: 10px;
+        right: 8px;
+        left: 8px;
+        width: auto;
     }
 }
 
@@ -151,12 +148,13 @@ body {
     border-radius: 16px;
     box-shadow: 0 4px 24px var(--shadow-color);
     border: 1px solid var(--border-color);
-    overflow: hidden;
+    overflow: visible;
     display: flex;
     flex-direction: column;
     height: calc(100vh - 40px);
     max-height: calc(100vh - 40px);
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
 }
 
 .chat-header {
@@ -583,8 +581,8 @@ body {
 .emoji-picker {
     position: absolute;
     bottom: 70px;
-    right: 20px;
     width: 320px;
+    max-width: calc(100% - 32px);
     background: var(--emoji-bg);
     border-radius: 14px;
     box-shadow: 0 12px 40px var(--shadow-color);
@@ -739,9 +737,6 @@ body {
 
 @media (max-width: 768px) {
     .emoji-picker {
-        width: calc(100% - 20px);
-        right: 10px;
-        left: 10px;
         bottom: 68px;
         border-radius: 14px 14px 0 0;
     }
@@ -914,18 +909,19 @@ body {
     box-shadow: 0 8px 30px var(--shadow-color);
     z-index: 1100;
     max-height: 200px;
+    max-width: calc(100% - 32px);
     overflow-y: auto;
     display: none;
 }
 
 [dir="rtl"] .mention-autocomplete {
-    right: 20px;
+    right: 16px;
     left: auto;
 }
 
 [dir="ltr"] .mention-autocomplete {
     right: auto;
-    left: 20px;
+    left: 16px;
 }
 
 .mention-item {
@@ -1034,18 +1030,6 @@ body {
     }
 
     .mention-autocomplete {
-        right: 10px;
-        left: 10px;
         bottom: 68px;
-    }
-
-    [dir="ltr"] .mention-autocomplete {
-        right: 10px;
-        left: 10px;
-    }
-
-    [dir="rtl"] .mention-autocomplete {
-        right: 10px;
-        left: 10px;
     }
 }
