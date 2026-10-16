@@ -192,7 +192,7 @@ body {
     margin-top: 0;
 }
 
-.theme-toggle, .lang-toggle {
+.theme-toggle, .lang-toggle, .font-size-toggle {
     background: rgba(255, 255, 255, 0.1);
     border: none;
     border-radius: 10px;
@@ -206,6 +206,34 @@ body {
     color: var(--header-text);
 }
 
+/* Font size toggle label */
+.font-size-label {
+    font-weight: 700;
+    font-family: inherit;
+    line-height: 1;
+    transition: font-size 0.2s ease;
+}
+
+[data-font-size="normal"]  .font-size-label { font-size: 14px; }
+[data-font-size="large"]   .font-size-label { font-size: 17px; }
+[data-font-size="larger"]  .font-size-label { font-size: 20px; }
+
+/* Message text size levels */
+[data-font-size="normal"]  .message-content { font-size: 15px; }
+[data-font-size="large"]   .message-content { font-size: 18px; }
+[data-font-size="larger"]  .message-content { font-size: 21px; }
+
+[data-font-size="normal"]  .message-input  { font-size: 16px; }
+[data-font-size="large"]   .message-input  { font-size: 19px; }
+[data-font-size="larger"]  .message-input  { font-size: 22px; }
+
+/* Override media-query font-size rules so readability toggle always wins */
+@media (max-width: 480px) {
+    [data-font-size="normal"]  .message-content { font-size: 15px; }
+    [data-font-size="large"]   .message-content { font-size: 18px; }
+    [data-font-size="larger"]  .message-content { font-size: 21px; }
+}
+
 .lang-toggle {
     width: auto;
     padding: 0 12px;
@@ -215,7 +243,7 @@ body {
     font-family: inherit;
 }
 
-.lang-toggle:hover, .theme-toggle:hover {
+.lang-toggle:hover, .theme-toggle:hover, .font-size-toggle:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: scale(1.05);
 }
@@ -398,6 +426,19 @@ body {
 .message-content {
     line-height: 1.6;
     font-size: 15px;
+    animation: contentZoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    transform-origin: center top;
+}
+
+@keyframes contentZoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .input-section {
@@ -649,6 +690,14 @@ body {
     gap: 10px;
     max-height: 220px;
     overflow-y: auto;
+    overflow-x: visible;
+}
+
+/* Allow emoji buttons to scale outside their grid cell */
+.emoji-container .emoji-btn-small,
+.recent-emoji-list .emoji-btn-small {
+    position: relative;
+    overflow: visible;
 }
 
 .emoji-btn-small {
@@ -659,15 +708,15 @@ body {
     height: 40px;
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.15s ease, font-size 0.15s ease, background 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    will-change: transform, font-size;
 }
 
 .emoji-btn-small:hover {
     background: var(--emoji-hover);
-    transform: scale(1.15);
 }
 
 .input-wrapper {
@@ -702,7 +751,20 @@ body {
     font-size: 20px;
     vertical-align: middle;
     margin: 0 2px;
+    display: inline-block;
+    position: relative;
+    transform-origin: center center;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: default;
+    z-index: 0;
 }
+
+.message-content .emoji-in-message:hover {
+    transform: scale(2);
+    z-index: 10;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 
 /* Scrollbar styling */
 .messages-container::-webkit-scrollbar {

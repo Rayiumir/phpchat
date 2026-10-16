@@ -52,6 +52,34 @@ document.addEventListener('DOMContentLoaded', function () {
     initTheme();
     initLanguage();
 
+    // --- Font size / readability toggle ---
+    const fontSizeToggle = document.getElementById('fontSizeToggle');
+    const fontSizeLabel  = document.getElementById('fontSizeLabel');
+    const fontSizes = ['normal', 'large', 'larger'];
+
+    function initFontSize() {
+        const saved = localStorage.getItem('fontSize') || 'normal';
+        applyFontSize(saved);
+    }
+
+    function applyFontSize(size) {
+        document.documentElement.setAttribute('data-font-size', size);
+        // Update tooltip
+        const labels = { normal: 'A', large: 'A+', larger: 'A++' };
+        fontSizeLabel.textContent = labels[size] || 'A';
+        localStorage.setItem('fontSize', size);
+    }
+
+    function cycleFontSize() {
+        const current = document.documentElement.getAttribute('data-font-size') || 'normal';
+        const nextIndex = (fontSizes.indexOf(current) + 1) % fontSizes.length;
+        applyFontSize(fontSizes[nextIndex]);
+    }
+
+    fontSizeToggle.addEventListener('click', cycleFontSize);
+    initFontSize();
+    // --- end font size ---
+
     const usernameForm = document.getElementById('usernameForm');
     const usernameInput = document.getElementById('usernameInput');
     const usernameSection = document.getElementById('usernameSection');
@@ -354,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <span class="time">${time}</span>
                 </div>
                 ${replyTo ? renderReplyQuote(replyTo) : ''}
-                <div class="message-content">${highlightMentions(escapeHtml(message))}</div>
+                <div class="message-content">${wrapEmojis(highlightMentions(escapeHtml(message)))}</div>
             `;
 
         messagesContainer.appendChild(messageDiv);
@@ -508,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <span class="time">${time}</span>
                         </div>
                         ${replyQuote}
-                        <div class="message-content">${highlightMentions(escapeHtml(msg.message))}</div>
+                        <div class="message-content">${wrapEmojis(highlightMentions(escapeHtml(msg.message)))}</div>
                     `;
 
                 const replyBtn = messageDiv.querySelector('.reply-btn');
@@ -616,6 +644,19 @@ document.addEventListener('DOMContentLoaded', function () {
         if (msg.reply_to_username &&
             msg.reply_to_username.toLowerCase() === currentUsername.toLowerCase()) return true;
         return false;
+    }
+
+    // Regex that matches a single emoji (covers most common Unicode emoji ranges)
+    const emojiRegex = /(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu;
+
+    // Wraps every emoji character in a span so it can be animated independently
+    function wrapEmojis(html) {
+        // We need to replace emojis that are outside of HTML tags
+        return html.replace(/>([^<]*)</g, function (match, text) {
+            return '>' + text.replace(emojiRegex, function (emoji) {
+                return '<span class="emoji-in-message">' + emoji + '</span>';
+            }) + '<';
+        });
     }
 
     // Function to highlight @mentions in escaped message text
@@ -913,3 +954,5 @@ document.addEventListener('DOMContentLoaded', function () {
         clearInterval(messageCheckInterval);
     });
 });
+
+
