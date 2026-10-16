@@ -15,7 +15,6 @@ A simple chat application written in PHP.
 - Real-time messaging using AJAX
 - Reply to messages with quoted previews
 - Mention users with @username (autocomplete, highlighting, and notifications)
-- User authentication with username only
 - Automatic message cleanup (removes oldest messages when exceeding 20)
 - Emoji support with built-in emoji picker
 - Cross-Origin Resource Sharing (CORS) enabled
@@ -58,3 +57,7 @@ cd PHPChat/
     </tr>
   </tbody>
 </table>
+
+# Disclaimer
+
+The responsibility for the proper and legal use of PHPChat, as well as for respecting privacy, user rights, and applicable laws, lies entirely with the users.
